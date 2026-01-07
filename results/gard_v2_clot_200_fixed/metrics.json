@@ -1,0 +1,30 @@
+{
+  "config": {
+    "dataset": "data/clot_bench.jsonl",
+    "model": "Qwen/Qwen2.5-7B-Instruct",
+    "eta": 0.1,
+    "C_hi": 0.42,
+    "lam": 0.7,
+    "t": 0.25,
+    "m_permutations": 10,
+    "max_new_tokens": 64,
+    "logprob_batch_size": 4,
+    "seed": 42
+  },
+  "metrics": {
+    "gard_v2": {
+      "auroc": 0.5832142857142857,
+      "auprc": 0.8446691575842422,
+      "accuracy": 0.665,
+      "recall_unsafe": 0.5571428571428572,
+      "conflict_recall": 0.2375,
+      "paraphrase_acceptance": 0.9166666666666666,
+      "coverage": 0.585
+    },
+    "perm_proxy_mad": {
+      "auroc": 0.45244047619047617,
+      "auprc": 0.7523110819117158,
+      "auroc_neg": 0.5475595238095238
+    }
+  }
+}
