@@ -348,19 +348,26 @@ GARD/
 
 ### Complexity
 
-- **GARD**: $O(n^2 d + nd)$ per example
-- **PermProxy**: $O(mnd)$ per example (m = permutations)
-- **Semantic Entropy**: $O(k \times T_{\text{gen}} + k^2)$ per example
+- **GARD**: $O(n^2 d + nd)$ per example (one forward pass + matrix operations)
+- **PermProxy**: $O(m \times T_{\text{gen}})$ per example (m=10 full LLM generations)
+- **Semantic Entropy**: $O(k \times T_{\text{gen}} + k^2)$ per example (k=10 full LLM generations)
+
+Where:
+- n = number of evidence documents (~5-10)
+- d = embedding dimension (3584 for Qwen2.5-7B)
+- T_gen = cost of full LLM generation pass (≫ embedding operations)
+
+**Key insight**: GARD requires only **one forward pass** to extract embeddings, then performs fast matrix operations. PermProxy and Semantic Entropy require **multiple full generation passes**, making them orders of magnitude slower.
 
 ### Timing (Qwen2.5-7B on A100)
 
 | Method | Time per Example | 200 Examples |
 |--------|-----------------|--------------|
 | GARD | ~0.5s | ~2 minutes |
-| PermProxy (m=10) | ~1s | ~3 minutes |
+| PermProxy (m=10) | ~5s | ~17 minutes |
 | Semantic Entropy (k=10) | ~15s | ~50 minutes |
 
-**GARD is 30× faster than semantic entropy** while providing provable worst-case guarantees.
+**GARD is 10× faster than PermProxy and 30× faster than Semantic Entropy** while providing provable worst-case guarantees.
 
 ---
 
