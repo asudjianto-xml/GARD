@@ -3,6 +3,7 @@
 Run GARD v2 evaluation on RAG datasets.
 
 Implements two-gate decision rule (conflict vs weakness separation).
+Compares GARD v2 against PermLogprob baseline (requires LLM generation).
 """
 
 import argparse
@@ -21,7 +22,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from gard.qwen_backend import QwenBackend
 from gard.gard_v2 import GARDv2, compute_coherence_v2, compute_margin_v2, compute_gisr_v2, compute_risk_score_v2
-from gard.perm_proxy import compute_perm_proxy_dispersion
+from gard.perm_logprob import compute_perm_logprob_dispersion
 
 
 @dataclass
@@ -40,8 +41,8 @@ class ExampleResult:
     decision: str
     abstain: bool
 
-    # PermProxy_MAD
-    perm_proxy_mad: float
+    # PermLogprob_MAD
+    perm_logprob_mad: float
 
     # Evidence count
     n_evidence: int
@@ -90,8 +91,10 @@ def run_example(
     gard_v2: GARDv2,
     embed_batch_size: int = 8,
     m_permutations: int = 10,
+    max_new_tokens: int = 64,
+    logprob_batch_size: int = 4,
 ) -> ExampleResult:
-    """Run GARD v2 and PermProxy_MAD on a single example."""
+    """Run GARD v2 and PermLogprob_MAD on a single example."""
 
     # Extract data
     example_id = example['id']
@@ -101,13 +104,18 @@ def run_example(
     if 'evidence' in example:
         if isinstance(example['evidence'], list) and len(example['evidence']) > 0:
             if isinstance(example['evidence'][0], dict):
+                evidence = example['evidence']  # Keep as List[Dict]
                 evidence_texts = [e['text'] for e in example['evidence']]
             else:
+                # Convert plain text list to dict format
                 evidence_texts = example['evidence']
+                evidence = [{'text': text} for text in evidence_texts]
         else:
             evidence_texts = example['evidence']
+            evidence = [{'text': text} for text in evidence_texts]
     else:
         evidence_texts = example.get('contexts', [])
+        evidence = [{'text': text} for text in evidence_texts]
 
     label = example.get('label', 0)
     subset_type = example.get('subset_type', example.get('family', 'unknown'))
@@ -124,9 +132,16 @@ def run_example(
     # Run GARD v2
     gard_result = gard_v2.score_single(V_emb, q_emb)
 
-    # Run PermProxy_MAD
-    perm_result = compute_perm_proxy_dispersion(V_emb, q_emb, m=m_permutations)
-    perm_proxy_mad = perm_result['p_mad'].item()
+    # Run PermLogprob_MAD (requires LLM generation for each permutation)
+    perm_result = compute_perm_logprob_dispersion(
+        backend,
+        query,
+        evidence,
+        m=m_permutations,
+        max_new_tokens=max_new_tokens,
+        batch_size=logprob_batch_size,
+    )
+    perm_logprob_mad = perm_result['lp_mad'].item()
 
     return ExampleResult(
         example_id=example_id,
@@ -139,7 +154,7 @@ def run_example(
         risk_score=gard_result['risk_score'],
         decision=gard_result['decision'],
         abstain=gard_result['abstain'],
-        perm_proxy_mad=perm_proxy_mad,
+        perm_logprob_mad=perm_logprob_mad,
         n_evidence=n_evidence,
     )
 
@@ -155,8 +170,8 @@ def evaluate_results(results: List[ExampleResult]) -> Dict:
     gard_abstains = np.array([int(r.abstain) for r in results])
     gard_decisions = np.array([r.decision for r in results])
 
-    # PermProxy_MAD metrics
-    perm_mad = np.array([r.perm_proxy_mad for r in results])
+    # PermLogprob_MAD metrics
+    perm_mad = np.array([r.perm_logprob_mad for r in results])
 
     # Ranking metrics
     if len(np.unique(labels)) > 1:
@@ -248,7 +263,7 @@ def save_results(
         'risk_score': r.risk_score,
         'decision': r.decision,
         'abstain': r.abstain,
-        'perm_proxy_mad': r.perm_proxy_mad,
+        'perm_logprob_mad': r.perm_logprob_mad,
         'n_evidence': r.n_evidence,
     } for r in results])
 
@@ -294,12 +309,12 @@ def print_results(metrics: Dict, dataset_name: str):
     print(f"  Conflict Recall:       {gard['conflict_recall']:.4f}")
     print(f"  Paraphrase Acceptance: {gard['paraphrase_acceptance']:.4f}")
 
-    print("\nPermProxy_MAD:")
+    print("\nPermLogprob_MAD:")
     print(f"  AUROC:                 {perm['auroc']:.4f}")
     print(f"  AUROC (negated):       {perm['auroc_neg']:.4f}")
     print(f"  AUPRC:                 {perm['auprc']:.4f}")
 
-    print("\nGap (GARD v2 - PermProxy_MAD):")
+    print("\nGap (GARD v2 - PermLogprob_MAD):")
     print(f"  AUROC:                 {gard['auroc'] - perm['auroc']:+.4f}")
 
     print("="*80)
@@ -331,7 +346,11 @@ def main():
     parser.add_argument('--embed-batch-size', type=int, default=8,
                        help='Batch size for embedding')
     parser.add_argument('--m-permutations', type=int, default=10,
-                       help='Number of permutations for PermProxy')
+                       help='Number of permutations for PermLogprob')
+    parser.add_argument('--max-new-tokens', type=int, default=64,
+                       help='Maximum tokens for generation (default: 64)')
+    parser.add_argument('--logprob-batch-size', type=int, default=4,
+                       help='Batch size for logprob computation (default: 4)')
     parser.add_argument('--seed', type=int, default=42,
                        help='Random seed')
     parser.add_argument('--device', type=str, default='cuda',
@@ -353,11 +372,15 @@ def main():
     print(f"\nDataset:  {args.dataset}")
     print(f"Model:    {args.model}")
     print(f"Output:   {args.output}")
-    print(f"\nHyperparameters:")
+    print(f"\nGARD v2 Hyperparameters:")
     print(f"  eta:    {args.eta}")
     print(f"  C_hi:   {args.C_hi}")
     print(f"  lambda: {args.lam}")
     print(f"  t:      {args.t}")
+    print(f"\nPermLogprob Baseline:")
+    print(f"  m_permutations:      {args.m_permutations}")
+    print(f"  max_new_tokens:      {args.max_new_tokens}")
+    print(f"  logprob_batch_size:  {args.logprob_batch_size}")
     print(f"\nSeed:     {args.seed}")
     print("="*80)
 
@@ -392,6 +415,8 @@ def main():
             gard_v2,
             args.embed_batch_size,
             args.m_permutations,
+            args.max_new_tokens,
+            args.logprob_batch_size,
         )
         results.append(result)
 
@@ -409,6 +434,9 @@ def main():
         'C_hi': args.C_hi,
         'lam': args.lam,
         't': args.t,
+        'm_permutations': args.m_permutations,
+        'max_new_tokens': args.max_new_tokens,
+        'logprob_batch_size': args.logprob_batch_size,
         'seed': args.seed,
     }
 
