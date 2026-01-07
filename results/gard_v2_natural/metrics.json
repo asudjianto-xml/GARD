@@ -1,0 +1,27 @@
+{
+  "config": {
+    "dataset": "data/sample_rag.jsonl",
+    "model": "Qwen/Qwen2.5-7B-Instruct",
+    "eta": 0.1,
+    "C_hi": 0.35,
+    "lam": 0.7,
+    "t": 0.25,
+    "seed": 42
+  },
+  "metrics": {
+    "gard_v2": {
+      "auroc": 0.41666666666666663,
+      "auprc": 0.125,
+      "accuracy": 0.1,
+      "recall_unsafe": 1.0,
+      "conflict_recall": NaN,
+      "paraphrase_acceptance": NaN,
+      "coverage": 0.0
+    },
+    "perm_proxy_mad": {
+      "auroc": 0.5,
+      "auprc": 0.1,
+      "auroc_neg": 0.5
+    }
+  }
+}

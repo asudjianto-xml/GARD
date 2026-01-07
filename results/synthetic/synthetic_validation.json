@@ -1,0 +1,65 @@
+{
+  "n_scenarios": 4,
+  "n_matches": 4,
+  "accuracy": 1.0,
+  "config": {
+    "d": 768,
+    "eta": 0.1,
+    "alpha": 0.5,
+    "seed": 42
+  },
+  "results": [
+    {
+      "scenario": "Consensus",
+      "type": "consensus",
+      "n_evidence": 5,
+      "M": 1.7849757671356201,
+      "absM": 1.7849757671356201,
+      "C": 0.34658628702163696,
+      "gisr": 3.5699517726898193,
+      "risk_ga": 0.3133510649204254,
+      "decision": "accept",
+      "expected_decision": "accept",
+      "matches_expected": true
+    },
+    {
+      "scenario": "Conflict",
+      "type": "conflict",
+      "n_evidence": 6,
+      "M": 0.0030515193939208984,
+      "absM": 0.0030515193939208984,
+      "C": 0.27946391701698303,
+      "gisr": 0.005085865501314402,
+      "risk_ga": 98.451416015625,
+      "decision": "abstain",
+      "expected_decision": "abstain",
+      "matches_expected": true
+    },
+    {
+      "scenario": "Weakness",
+      "type": "weakness",
+      "n_evidence": 2,
+      "M": 9.313225746154785e-09,
+      "absM": 9.313225746154785e-09,
+      "C": 0.9999963641166687,
+      "gisr": 4.6566128730773926e-08,
+      "risk_ga": 10737188.0,
+      "decision": "abstain",
+      "expected_decision": "abstain",
+      "matches_expected": true
+    },
+    {
+      "scenario": "Mixed",
+      "type": "mixed",
+      "n_evidence": 4,
+      "M": 0.38252997398376465,
+      "absM": 0.38252997398376465,
+      "C": 0.3902643918991089,
+      "gisr": 0.9563249945640564,
+      "risk_ga": 0.7179670333862305,
+      "decision": "abstain",
+      "expected_decision": "abstain",
+      "matches_expected": true
+    }
+  ]
+}

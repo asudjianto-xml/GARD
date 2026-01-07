@@ -1,0 +1,27 @@
+{
+  "config": {
+    "dataset": "data/clot_bench.jsonl",
+    "model": "Qwen/Qwen2.5-7B-Instruct",
+    "eta": 0.1,
+    "C_hi": 0.45,
+    "lam": 0.7,
+    "t": 0.25,
+    "seed": 42
+  },
+  "metrics": {
+    "gard_v2": {
+      "auroc": 0.5832142857142857,
+      "auprc": 0.8446691575842422,
+      "accuracy": 0.58,
+      "recall_unsafe": 0.4,
+      "conflict_recall": 0.0625,
+      "paraphrase_acceptance": 1.0,
+      "coverage": 0.72
+    },
+    "perm_proxy_mad": {
+      "auroc": 0.5,
+      "auprc": 0.7,
+      "auroc_neg": 0.5
+    }
+  }
+}

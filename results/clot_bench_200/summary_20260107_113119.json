@@ -1,0 +1,38 @@
+{
+  "config": {
+    "eta": 0.1,
+    "alpha": 0.5,
+    "m_permutations": 10,
+    "k_answers": 10,
+    "se_threshold": 0.85,
+    "max_new_tokens": 64,
+    "embed_batch_size": 8,
+    "logprob_batch_size": 4
+  },
+  "dataset_stats": {
+    "n_examples": 200,
+    "n_evidence_min": 6,
+    "n_evidence_max": 10,
+    "n_evidence_mean": 7.77,
+    "n_hallucinations": 140,
+    "n_supported": 60,
+    "hallucination_rate": 0.7
+  },
+  "methods": {
+    "GARD": {
+      "accuracy": 0.7,
+      "auroc": 0.7057142857142857,
+      "auprc": 0.8957873926235954
+    },
+    "PermProxy_STD": {
+      "accuracy": 0.59,
+      "auroc": 0.3632142857142857,
+      "auprc": 0.645851091866073
+    },
+    "PermProxy_MAD": {
+      "accuracy": 0.58,
+      "auroc": 0.36714285714285716,
+      "auprc": 0.640949539684047
+    }
+  }
+}
