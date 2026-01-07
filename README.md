@@ -55,7 +55,10 @@ Unlike permutation methods that operate at a fixed point, GARD exposes a **safet
 | C_hi = 0.42 | 55.7% | **91.7%** | 58.5% | General QA |
 | C_hi = 0.45 | 40.0% | **100.0%** | **72.0%** | Search engines |
 
-**PermProxy-MAD**: 63.0% conflict recall, 80.0% paraphrase (AUROC 0.367, anti-correlated with risk)
+**Baselines:**
+- **PermProxy-MAD** (embedding-only): 63.0% conflict recall, 80.0% paraphrase (AUROC 0.367)
+- **PermLogprob-MAD** (proper LLM baseline): AUROC 0.452
+- Both are anti-correlated with risk (AUROC < 0.5), confirming permutation methods fail on adversarial data
 
 ---
 
