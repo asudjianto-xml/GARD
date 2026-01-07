@@ -26,7 +26,7 @@ As a risk-controlled abstention system rather than a ranking classifier, GARD pr
 
 Existing hallucination detection methods suffer from two critical flaws:
 
-1. **Permutation-based methods** (PermProxy, semantic entropy) optimize **average-case correctness** $\mathbb{E}[\text{correct}|\text{model}]$, leading to catastrophic failures on adversarial inputs
+1. **Permutation-based methods** (PermLogprob, semantic entropy) optimize **average-case correctness** $\mathbb{E}[\text{correct}|\text{model}]$, leading to catastrophic failures on adversarial inputs
 2. **Standard geometric approaches** conflate two distinct failure modes:
    - **Evidence conflict**: Internal disagreement between chunks (e.g., "1879" vs. "1880")
    - **Insufficient support**: Weak alignment vulnerable to perturbations
@@ -158,7 +158,9 @@ This produces:
 | GARD (C_hi=0.30) | 96.4% | 0.0% | 2.5% | 0.583 |
 | GARD (C_hi=0.42) | 55.7% | 91.7% | 58.5% | 0.583 |
 | GARD (C_hi=0.45) | 40.0% | 100.0% | 72.0% | 0.583 |
-| PermProxy-MAD | 63.0% | 80.0% | 58.0% | 0.367 |
+| PermProxy-MAD* | 63.0% | 80.0% | 58.0% | 0.367 |
+
+*Note: PermProxy-MAD uses embedding-only approximation. For proper LLM baseline (PermLogprob), use `scripts/run_gard_v2.py` which achieves 0.452 AUROC (still below random).
 
 ### Step 3: Generate Paper Figures
 
@@ -314,7 +316,8 @@ Default: $\lambda = 0.7$, $t = 0.25$
 GARD/
 ├── gard/                          # Core package
 │   ├── gard_v2.py                # Two-gate GARD implementation
-│   ├── perm_proxy.py             # PermProxy-MAD baseline
+│   ├── perm_proxy.py             # PermProxy-MAD (embedding-only approximation)
+│   ├── perm_logprob.py           # PermLogprob-MAD (proper LLM baseline)
 │   ├── semantic_entropy.py       # Semantic entropy baseline
 │   ├── embed.py                  # Embedding extraction
 │   ├── metrics.py                # Geometric metrics
@@ -349,25 +352,28 @@ GARD/
 ### Complexity
 
 - **GARD**: $O(n^2 d + nd)$ per example (one forward pass + matrix operations)
-- **PermProxy**: $O(m \times T_{\text{gen}})$ per example (m=10 full LLM generations)
+- **PermLogprob**: $O(m \times T_{\text{gen}})$ per example (m=10 full LLM generations + logprob computation)
 - **Semantic Entropy**: $O(k \times T_{\text{gen}} + k^2)$ per example (k=10 full LLM generations)
 
 Where:
 - n = number of evidence documents (~5-10)
 - d = embedding dimension (3584 for Qwen2.5-7B)
+- m = number of permutations (10)
 - T_gen = cost of full LLM generation pass (≫ embedding operations)
 
-**Key insight**: GARD requires only **one forward pass** to extract embeddings, then performs fast matrix operations. PermProxy and Semantic Entropy require **multiple full generation passes**, making them orders of magnitude slower.
+**Key insight**: GARD requires only **one forward pass** to extract embeddings, then performs fast matrix operations. PermLogprob and Semantic Entropy require **multiple full generation passes**, making them orders of magnitude slower.
 
 ### Timing (Qwen2.5-7B on A100)
 
 | Method | Time per Example | 200 Examples |
 |--------|-----------------|--------------|
 | GARD | ~0.5s | ~2 minutes |
-| PermProxy (m=10) | ~5s | ~17 minutes |
+| PermLogprob (m=10) | ~6s | ~20 minutes |
 | Semantic Entropy (k=10) | ~15s | ~50 minutes |
 
-**GARD is 10× faster than PermProxy and 30× faster than Semantic Entropy** while providing provable worst-case guarantees.
+**GARD is 12× faster than PermLogprob and 30× faster than Semantic Entropy** while providing provable worst-case guarantees.
+
+**Note**: The paper reports a PermProxy baseline using an embedding-only approximation (no LLM calls, ~0.5s per example). The proper baseline described in the paper methodology is PermLogprob, which requires actual LLM generation. See `results/gard_v2_clot_200_fixed/BASELINE_COMPARISON.md` for details.
 
 ---
 
@@ -391,10 +397,12 @@ If you use GARD in your research, please cite:
 
 ## Key Results
 
-### Main Finding: PermProxy Anti-Correlation
+### Main Finding: Permutation Methods Anti-Correlation
 
 On CLOT Bench adversarial dataset:
 - **PermProxy-MAD achieves 0.367 AUROC** (below random!)
+  - Note: This uses an embedding-only approximation (no LLM calls)
+  - Proper PermLogprob baseline: 0.452 AUROC (still below random)
 - Confirms theoretical prediction: permutation dispersion optimizes $\mathbb{E}[\text{correct}|\text{model}]$, not worst-case safety
 - Failure mechanism:
   - **Balanced Contradiction**: Model stable on wrong answer → low dispersion → false negative
