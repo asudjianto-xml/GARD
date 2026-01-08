@@ -1,0 +1,51 @@
+{
+  "config": {
+    "dataset": "data/clot_bench.jsonl",
+    "model": "Qwen/Qwen2.5-7B-Instruct",
+    "n_examples": 200,
+    "eta": 0.1,
+    "C_hi": 0.42,
+    "lam": 0.7,
+    "t": 0.25,
+    "m_permutations": 10,
+    "max_new_tokens": 64,
+    "logprob_batch_size": 4,
+    "seed": 42
+  },
+  "metrics": {
+    "gard": {
+      "C_auroc": 0.5827380952380952,
+      "gisr_auroc": 0.24571428571428572,
+      "abstain_recall": 0.5571428571428572,
+      "abstain_coverage": 0.585
+    },
+    "compression": {
+      "ISR_auroc": 0.4754166666666667,
+      "RoH_auroc": 0.4905952380952381,
+      "lp_mad_auroc": 0.45244047619047617,
+      "abstain_recall": 0.5071428571428571,
+      "abstain_coverage": 0.43500000000000005
+    },
+    "correlation": {
+      "C_vs_lp_mad": {
+        "pearson": 0.41461131687001573,
+        "spearman": 0.4573497164833023
+      },
+      "gisr_vs_ISR": {
+        "pearson": 0.3948179863543907,
+        "spearman": 0.3514722342674081
+      },
+      "margin_vs_delta": {
+        "pearson": -0.04491940566298487,
+        "spearman": 0.14998190976431788
+      }
+    },
+    "agreement": {
+      "abstention_agreement": 0.56,
+      "both_abstain": 0.27,
+      "either_abstain": 0.71,
+      "gard_only": 0.145,
+      "compression_only": 0.295
+    }
+  }
+}
